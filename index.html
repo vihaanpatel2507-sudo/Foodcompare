@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FoodCompare · Swiggy vs Zomato</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --swiggy: #FC8019;
+      --zomato: #E23744;
+      --bg: #0F0D0B;
+      --surface: #1A1713;
+      --surface2: #231F1A;
+      --border: rgba(255,255,255,0.08);
+      --text: #F5F0E8;
+      --muted: #9B9286;
+      --gold: #D4A843;
+      --green: #2ECC71;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    header {
+      padding: 3rem 0 1.5rem;
+      text-align: center;
+    }
+    .logo-badge {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: 100px;
+      padding: 4px 14px 4px 8px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.04em;
+    }
+    .logo-badge .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      display: inline-block;
+    }
+    h1 {
+      font-family: "Playfair Display", serif;
+      font-size: clamp(2.2rem, 6vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+    h1 em { font-style: italic; color: var(--gold); }
+    .subtitle {
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .search-wrap {
+      margin: 2.5rem 0 0;
+      display: flex;
+      gap: 10px;
+    }
+    @media (max-width: 640px) {
+      .search-wrap { flex-direction: column; }
+    }
+    .search-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 16px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus { border-color: rgba(212,168,67,0.5); }
+    .area-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 14px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      min-width: 170px;
+    }
+    .search-btn {
+      background: var(--gold);
+      color: #1A140A;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 22px;
+      font-family: "DM Sans", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .search-btn:hover { opacity: 0.9; }
+    .search-btn:active { transform: scale(0.97); }
+    .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+      justify-content: center;
+    }
+    .chip {
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .chip:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,0.2);
+    }
+    .loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 3rem 0;
+    }
+    .loader.active { display: flex; }
+    .dots { display: flex; gap: 7px; }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--gold);
+      opacity: 0.3;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
+      40% { transform: translateY(-10px); opacity: 1; }
+    }
+    .loader-text {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .results {
+      display: none;
+      padding-bottom: 4rem;
+    }
+    .results.active { display: block; }
+    .fadeUp {
+      opacity: 0;
+      transform: translateY(24px);
+      animation: fadeUp 0.5s ease forwards;
+    }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .divider {
+      height: 0.5px;
+      background: var(--border);
+      margin: 2.5rem 0 0;
+    }
+    .ai-card {
+      margin-top: 2.5rem;
+      background: linear-gradient(135deg, #1E1A12 0%, #17130D 100%);
+      border: 1px solid rgba(212,168,67,0.25);
+      border-radius: 16px;
+      padding: 1.5rem 1.75rem;
+    }
+    .ai-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    .ai-label svg { width: 14px; height: 14px; fill: var(--gold); }
+    .ai-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+    .ai-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #E8E0D0;
+      white-space: pre-wrap;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 2.5rem 0 1.25rem;
+      flex-wrap: wrap;
+    }
+    .section-title {
+      font-family: "Playfair Display", serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+    .badge {
+      font-family: "DM Sans", sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .badge-swiggy { background: rgba(252,128,25,0.15); color: var(--swiggy); }
+    .badge-zomato { background: rgba(226,55,68,0.15); color: var(--zomato); }
+    .badge-ai { background: rgba(212,168,67,0.15); color: var(--gold); }
+
+    /* Restaurant cards */
+    .rest-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    @media (max-width: 640px) {
+      .rest-grid { grid-template-columns: 1fr; }
+    }
+    .rest-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+      position: relative;
+    }
+    .rest-card:hover { transform: translateY(-3px); }
+    .rest-card.platform-swiggy { border-top: 3px solid var(--swiggy); }
+    .rest-card.platform-zomato { border-top: 3px solid var(--zomato); }
+    .rest-card.platform-both { border-top: 3px solid var(--gold); }
+    .rest-info {
+      padding: 1rem 1.1rem 0.9rem;
+    }
+    .rest-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+      gap: 8px;
+    }
+    .rest-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      flex: 1;
+    }
+    .platform-tag {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+    .tag-swiggy { background: rgba(252,128,25,0.15); color: var(--swiggy); }
+    .tag-zomato { background: rgba(226,55,68,0.15); color: var(--zomato); }
+    .tag-both { background: rgba(212,168,67,0.15); color: var(--gold); }
+    .rest-cuisine {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .rest-area {
+      font-size: 11px;
+      color: var(--muted);
+      opacity: 0.7;
+      margin-bottom: 10px;
+    }
+    .price-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(46,204,113,0.1);
+      border: 1px solid rgba(46,204,113,0.2);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    .no-price {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+    .action-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 8px 4px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s, transform 0.1s;
+      border: 1px solid transparent;
+      text-align: center;
+      color: inherit;
+    }
+    .action-btn:hover { opacity: 0.85; transform: scale(0.97); }
+    .btn-swiggy {
+      background: rgba(252,128,25,0.12);
+      color: var(--swiggy);
+      border-color: rgba(252,128,25,0.2);
+    }
+    .btn-zomato {
+      background: rgba(226,55,68,0.12);
+      color: var(--zomato);
+      border-color: rgba(226,55,68,0.2);
+    }
+    .btn-map {
+      background: rgba(212,168,67,0.1);
+      color: var(--gold);
+      border-color: rgba(212,168,67,0.2);
+    }
+    .btn-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+    .ic-s { background: var(--swiggy); }
+    .ic-z { background: var(--zomato); }
+    .ic-m { background: var(--gold); font-size: 12px; }
+    .no-rest {
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      background: var(--surface);
+      border-radius: 14px;
+      border: 0.5px solid var(--border);
+    }
+
+    /* Google snippets */
+    .platform-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 600px) {
+      .platform-grid { grid-template-columns: 1fr; }
+    }
+    .platform-col {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .platform-header {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .platform-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .logo-swiggy { background: rgba(252,128,25,0.18); color: var(--swiggy); }
+    .logo-zomato { background: rgba(226,55,68,0.18); color: var(--zomato); }
+    .platform-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .result-list { list-style: none; }
+    .result-item {
+      padding: 0.85rem 1.25rem;
+      border-bottom: 0.5px solid var(--border);
+      transition: background 0.15s;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: var(--surface2); }
+    .result-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 3px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .result-snippet {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+    .result-link {
+      font-size: 11px;
+      color: var(--gold);
+      text-decoration: none;
+      opacity: 0.8;
+    }
+    .result-link:hover { opacity: 1; }
+    .no-results {
+      padding: 1.5rem;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .error-msg {
+      display: none;
+      margin-top: 1.5rem;
+      background: rgba(226,55,68,0.1);
+      border: 0.5px solid rgba(226,55,68,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #F09595;
+    }
+    .error-msg.active { display: block; }
+
+    /* share feature */
+    .btn-share {
+      display: none;
+      margin-top: 1.25rem;
+      background: rgba(212,168,67,.15);
+      color: var(--gold);
+      border-color: rgba(212,168,67,.3);
+      width: 100%;
+      justify-content: center;
+    }
+    .ic-share {
+      background: var(--gold);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo-badge">
+        <span class="dot"></span>
+        <span id="area-pill">Ahmedabad · Food Deals</span>
+      </div>
+      <h1>Find the best <br><em>food deals</em> near you</h1>
+      <p class="subtitle">Real restaurants, AI price extraction. Order on Swiggy or Zomato.</p>
+
+      <div class="search-wrap">
+        <input id="dish-input" class="search-input" type="text"
+               placeholder="Type a dish e.g. Biryani, Pizza, Burger" autocomplete="off">
+        <select id="area-select" class="area-select">
+          <option value="Chandkheda" selected>Chandkheda</option>
+          <option value="Motera">Motera</option>
+          <option value="Sabarmati">Sabarmati</option>
+          <option value="Naranpura">Naranpura</option>
+          <option value="Navrangpura">Navrangpura</option>
+          <option value="CG Road">CG Road</option>
+          <option value="Vastrapur">Vastrapur</option>
+          <option value="Prahlad Nagar">Prahlad Nagar</option>
+          <option value="Satellite">Satellite</option>
+          <option value="Bodakdev">Bodakdev</option>
+          <option value="Maninagar">Maninagar</option>
+          <option value="Bapunagar">Bapunagar</option>
+          <option value="Gota">Gota</option>
+          <option value="Science City">Science City</option>
+          <option value="Thaltej">Thaltej</option>
+        </select>
+        <button id="compare-btn" class="search-btn" onclick="compare()">Compare</button>
+      </div>
+
+      <div class="chips">
+        <span class="chip" onclick="quickSearch('Biryani')">Biryani</span>
+        <span class="chip" onclick="quickSearch('Pizza')">Pizza</span>
+        <span class="chip" onclick="quickSearch('Burger')">Burger</span>
+        <span class="chip" onclick="quickSearch('Thali')">Thali</span>
+        <span class="chip" onclick="quickSearch('Masala Dosa')">Masala Dosa</span>
+        <span class="chip" onclick="quickSearch('Pav Bhaji')">Pav Bhaji</span>
+      </div>
+    </header>
+
+    <div id="error-msg" class="error-msg"></div>
+
+    <div id="loader" class="loader">
+      <div class="dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <p class="loader-text" id="loader-text">Searching restaurants…</p>
+    </div>
+
+    <div id="results" class="results">
+      <!-- AI Card -->
+      <div class="ai-card fadeUp" style="animation-delay: 0s;">
+        <div class="ai-label">
+          <svg viewBox="0 0 20 20"><path d="M10 1l2.39 6.26L19 9l-5.5 5.26L14.78 21 10 17.77 5.22 21l1.28-6.74L1 9l6.61-1.74z"></path></svg>
+          AI Recommendation
+        </div>
+        <div id="ai-subtitle" class="ai-subtitle"></div>
+        <p id="ai-text" class="ai-text"></p>
+      </div>
+
+      <!-- Share button -->
+      <div class="fadeUp" style="animation-delay: 0.05s;">
+        <button id="share-btn" class="action-btn btn-share" title="Copy shareable link">
+          <div class="btn-icon ic-share">🔗</div>
+          Share this search
+        </button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Restaurant cards -->
+      <div class="fadeUp" style="animation-delay: 0.1s;">
+        <div class="section-header">
+          <span class="section-title">Restaurants Found</span>
+          <span class="badge badge-ai">AI Extracted</span>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">
+          Restaurants from search results, click to order on Swiggy or Zomato.
+        </p>
+        <div id="restaurants-grid" class="rest-grid"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Google snippets -->
+      <div class="fadeUp" style="animation-delay: 0.2s;">
+        <div class="section-header">
+          <span class="section-title">Price Research</span>
+        </div>
+
+        <div class="platform-grid">
+          <div class="platform-col">
+            <div class="platform-header">
+              <div class="platform-logo logo-swiggy">S</div>
+              <span class="platform-name">Swiggy</span>
+              <span class="badge badge-swiggy" style="margin-left:auto;">Google</span>
+            </div>
+            <ul id="swiggy-list" class="result-list"></ul>
+          </div>
+
+          <div class="platform-col">
+            <div class="platform-header">
+              <div class="platform-logo logo-zomato">Z</div>
+              <span class="platform-name">Zomato</span>
+              <span class="badge badge-zomato" style="margin-left:auto;">Google</span>
+            </div>
+            <ul id="zomato-list" class="result-list"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "https://YOUR-APP-NAME.onrender.com";
+
+    function quickSearch(dish) {
+      document.getElementById("dish-input").value = dish;
+      compare();
+    }
+
+    document.getElementById("dish-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") compare();
+    });
+
+    async function compare() {
+      const dish = document.getElementById("dish-input").value.trim();
+      const area = document.getElementById("area-select").value;
+      if (!dish) return;
+
+      const btn = document.getElementById("compare-btn");
+      const loader = document.getElementById("loader");
+      const results = document.getElementById("results");
+      const errorEl = document.getElementById("error-msg");
+      const loaderText = document.getElementById("loader-text");
+      const areaPill = document.getElementById("area-pill");
+
+      areaPill.textContent = `${area} · Ahmedabad`;
+
+      btn.disabled = true;
+      results.classList.remove("active");
+      errorEl.classList.remove("active");
+      loader.classList.add("active");
+
+      const msgs = [
+        `Searching for ${dish} in ${area}...`,
+        "Comparing Swiggy & Zomato prices...",
+        "AI extracting restaurants...",
+        "Almost done, let me refine this..."
+      ];
+      let i = 0;
+      const msgInt = setInterval(() => {
+        loaderText.textContent = msgs[i % msgs.length];
+        i++;
+      }, 1800);
+
+      try {
+        const res = await fetch(`${API_BASE}/compare`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dish, area })
+        });
+
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
+        const data = await res.json();
+
+        document.getElementById("ai-text").textContent = data.ai_recommendation || "";
+        document.getElementById("ai-subtitle").textContent =
+          `Dish: ${dish} · Area: ${area}, Ahmedabad`;
+
+        renderRestaurants(data.restaurants, dish, area);
+        renderSearchList("swiggy-list", data.swiggy_search);
+        renderSearchList("zomato-list", data.zomato_search);
+
+        loader.classList.remove("active");
+        results.classList.add("active");
+
+        document.querySelectorAll(".fadeUp").forEach((el) => {
+          el.style.animation = "none";
+          el.offsetHeight; // force reflow
+          el.style.animation = "";
+        });
+
+        const shareBtn = document.getElementById("share-btn");
+        if (shareBtn) shareBtn.style.display = "flex";
+      } catch (err) {
+        loader.classList.remove("active");
+        errorEl.textContent = err.message;
+        errorEl.classList.add("active");
+      } finally {
+        clearInterval(msgInt);
+        btn.disabled = false;
+      }
+    }
+
+    function renderRestaurants(restaurants, dish, area) {
+      const grid = document.getElementById("restaurants-grid");
+      grid.innerHTML = "";
+
+      if (!restaurants || restaurants.length === 0) {
+        grid.innerHTML = `
+          <div class="no-rest">
+            No restaurants found in search results.<br><br>
+            <a href="https://www.swiggy.com/search?query=${encodeURIComponent(dish)}"
+               target="_blank" style="color:var(--swiggy);margin-right:16px;">Search Swiggy</a>
+            <a href="https://www.zomato.com/ahmedabad/search?q=${encodeURIComponent(dish)}"
+               target="_blank" style="color:var(--zomato);">Search Zomato</a>
+          </div>
+        `;
+        return;
+      }
+
+      restaurants.forEach((r) => {
+        const platform = (r.platform || "").toLowerCase();
+        const card = document.createElement("div");
+        card.className = `rest-card platform-${platform === "both" ? "both" : platform}`;
+
+        const tagClass =
+          platform === "swiggy" ? "tag-swiggy" :
+          platform === "zomato" ? "tag-zomato" : "tag-both";
+
+        const tagText =
+          platform === "both" ? "Swiggy & Zomato" :
+          platform.charAt(0).toUpperCase() + platform.slice(1);
+
+        const priceHtml = r.dish_price
+          ? `<div class="price-badge">${escHtml(r.dish_price)}</div>`
+          : `<div class="no-price">Price not listed</div>`;
+
+        const swiggyUrl =
+          r.swiggy_url ||
+          `https://www.swiggy.com/search?query=${encodeURIComponent(dish)}`;
+
+        const zomatoUrl =
+          r.zomato_url ||
+          `https://www.zomato.com/ahmedabad/search?q=${encodeURIComponent(r.name || dish)}`;
+
+        const mapUrl =
+          r.map_url ||
+          `https://www.google.com/maps/search/${encodeURIComponent(
+            (r.name || "") + " restaurant " + area + " Ahmedabad"
+          )}`;
+
+        card.innerHTML = `
+          <div class="rest-info">
+            <div class="rest-header">
+              <div class="rest-name">${escHtml(r.name || "Restaurant")}</div>
+              <span class="platform-tag ${tagClass}">${escHtml(tagText)}</span>
+            </div>
+            <div class="rest-cuisine">${escHtml(r.cuisine || "Restaurant")}</div>
+            <div class="rest-area">${escHtml(r.area || (area + ", Ahmedabad"))}</div>
+            ${priceHtml}
+            <div class="action-btns">
+              <a class="action-btn btn-swiggy" href="${escHtml(swiggyUrl)}" target="_blank" rel="noopener">
+                <div class="btn-icon ic-s">S</div>
+                Swiggy
+              </a>
+              <a class="action-btn btn-zomato" href="${escHtml(zomatoUrl)}" target="_blank" rel="noopener">
+                <div class="btn-icon ic-z">Z</div>
+                Zomato
+              </a>
+              <a class="action-btn btn-map" href="${escHtml(mapUrl)}" target="_blank" rel="noopener">
+                <div class="btn-icon ic-m">📍</div>
+                Maps
+              </a>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderSearchList(id, items) {
+      const ul = document.getElementById(id);
+      ul.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        ul.innerHTML = `<li class="no-results">No results found</li>`;
+        return;
+      }
+
+      items.forEach((item) => {
+        const li = document.createElement("li");
+        li.className = "result-item";
+        li.innerHTML = `
+          <p class="result-title">${escHtml(item.title || "")}</p>
+          <p class="result-snippet">${escHtml(item.snippet || "")}</p>
+          <a class="result-link" href="${escHtml(item.link || "#")}" target="_blank" rel="noopener">
+            View
+          </a>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    function escHtml(s) {
+      return String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    // share feature: ?dish=&area= support + copy link
+    function initShare() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const dish = urlParams.get("dish");
+      const area = urlParams.get("area");
+
+      if (area) {
+        const select = document.getElementById("area-select");
+        if ([...select.options].some(o => o.value === area)) {
+          select.value = area;
+        }
+        document.getElementById("area-pill").textContent = `${select.value} · Ahmedabad`;
+      }
+
+      if (dish) {
+        const input = document.getElementById("dish-input");
+        input.value = dish;
+        compare();
+      }
+    }
+
+    window.addEventListener("load", initShare);
+
+    const shareBtnEl = document.getElementById("share-btn");
+    if (shareBtnEl) {
+      shareBtnEl.addEventListener("click", () => {
+        const dish = document.getElementById("dish-input").value.trim();
+        const area = document.getElementById("area-select").value;
+        if (!dish) return;
+
+        const url = new URL(window.location.href);
+        url.searchParams.set("dish", dish);
+        url.searchParams.set("area", area);
+
+        navigator.clipboard.writeText(url.toString()).then(() => {
+          const orig = shareBtnEl.innerHTML;
+          shareBtnEl.innerHTML =
+            '<div class="btn-icon ic-share" style="background: var(--green);">✓</div> Copied!';
+          shareBtnEl.style.background = "rgba(46,204,113,.2)";
+          setTimeout(() => {
+            shareBtnEl.innerHTML = orig;
+            shareBtnEl.style.background = "rgba(212,168,67,.15)";
+          }, 2000);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
