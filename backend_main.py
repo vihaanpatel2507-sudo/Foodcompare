@@ -24,8 +24,10 @@ GROQ_API_KEY = "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"
 groq_client = Groq(api_key=GROQ_API_KEY)
 
 
+
 class CompareRequest(BaseModel):
     dish: str
+    area: str = "Chandkheda"
 
 
 async def search_serp(client: httpx.AsyncClient, query: str):
@@ -110,15 +112,15 @@ async def compare(req: CompareRequest):
 
     async with httpx.AsyncClient() as client:
         serp_swiggy, serp_zomato = await asyncio.gather(
-            search_serp(client, f"{dish} swiggy chandkheda ahmedabad price"),
-            search_serp(client, f"{dish} zomato chandkheda ahmedabad price"),
+            search_serp(client, f"{dish} swiggy {req.area} ahmedabad price"),
+            search_serp(client, f"{dish} zomato {req.area} ahmedabad price"),
         )
 
     # Build AI recommendation prompt
     swiggy_text = "\n".join(f"- {r['title']}: {r['snippet']}" for r in serp_swiggy) or "No results"
     zomato_text = "\n".join(f"- {r['title']}: {r['snippet']}" for r in serp_zomato) or "No results"
 
-    rec_prompt = f"""You are a food price comparison agent for Chandkheda, Ahmedabad.
+    rec_prompt = f"""You are a food price comparison agent for {req.area}, Ahmedabad.
 User searched for: "{dish}"
 
 Swiggy results:
