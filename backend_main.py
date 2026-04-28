@@ -18,8 +18,8 @@ import os
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-SERP_API_KEY = "e937fe5b968c4e4f644584ac9fcbcdc0e7d65ec7a7c4e14f52c2e17175f92643"
-GROQ_API_KEY = "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"
+SERP_API_KEY = "2f6d6ff15b3326ec8eab7b76c17094bd17d1826e0a806dc2fc75cfa5000094c8"
+GROQ_API_KEY = "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"
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
